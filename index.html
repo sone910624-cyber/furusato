@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ふるさと寄付帳</title>
+<meta name="theme-color" content="#1e1b4b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="寄付帳">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<style>
+  :root { --ink:#1e1b4b; --ink2:#312e81; --line:#e2e8f0; --mute:#94a3b8; --red:#dc2626; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#f8fafc; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+    background-image:repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(30,41,90,.04) 32px); padding-bottom:40px; }
+  .serif { font-family:"Hiragino Mincho ProN","Yu Mincho",serif; }
+  header { background:#1e1b4b; color:#fff; padding:calc(24px + env(safe-area-inset-top)) 16px 20px; }
+  .wrap { max-width:448px; margin:0 auto; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  h1 { margin:0; font-size:20px; letter-spacing:.2em; }
+  .status { font-size:11px; color:#a5b4fc; }
+  .tabs { display:flex; gap:8px; margin-top:16px; overflow-x:auto; }
+  .tab { border:0; border-radius:999px; padding:4px 12px; font-size:14px; background:#312e81; color:#c7d2fe; flex-shrink:0; }
+  .tab.on { background:#fff; color:#1e1b4b; font-weight:700; }
+  .total { margin-top:20px; display:flex; justify-content:space-between; align-items:flex-end; }
+  .total .lbl { font-size:11px; color:#a5b4fc; letter-spacing:.2em; }
+  .total .big { font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .total .big.neg { color:#f87171; }
+  .total .sub { text-align:right; font-size:11px; color:#a5b4fc; line-height:1.7; }
+  main { max-width:448px; margin:16px auto 0; padding:0 16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.05); padding:16px; margin-bottom:16px; }
+  .name { font-size:18px; font-weight:700; border:0; background:transparent; width:8em; color:var(--ink); padding:0; }
+  .name:focus { outline:none; border-bottom:1px solid #a5b4fc; }
+  .link { background:none; border:0; padding:0; margin-top:4px; font-size:12px; color:#4338ca; text-decoration:underline; display:block; }
+  .seal { width:80px; height:80px; border-radius:50%; border:2px solid var(--red); color:var(--red); transform:rotate(3deg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+  .seal span:first-child { font-size:11px; letter-spacing:.2em; }
+  .seal span:last-child { font-size:14px; font-weight:700; text-align:center; line-height:1.2; }
+  .bar { height:12px; background:#f1f5f9; border:1px solid var(--line); border-radius:2px; overflow:hidden; margin-top:4px; }
+  .bar i { display:block; height:100%; background:#3730a3; transition:width .4s; }
+  .bar i.over { background:var(--red); }
+  .barlbl { display:flex; justify-content:space-between; font-size:12px; color:#64748b; margin-top:12px; }
+  .settings { margin-top:12px; background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:12px; font-size:14px; }
+  .settings label { display:flex; align-items:center; justify-content:space-between; gap:8px; color:#475569; }
+  .note { font-size:11px; color:var(--mute); margin:8px 0 0; }
+  input[type=text], input[type=date], input[inputmode] { border:1px solid #cbd5e1; border-radius:6px; padding:8px 10px; font-size:14px; font-family:inherit; width:100%; }
+  .settings input { width:130px; text-align:right; }
+  .list { margin-top:12px; }
+  .don { display:flex; align-items:center; gap:8px; padding:8px 0; border-top:1px dashed var(--line); font-size:14px; }
+  .don:first-child { border-top:0; }
+  .don .d { font-size:12px; color:var(--mute); width:44px; flex-shrink:0; }
+  .don .t { flex:1; min-width:0; }
+  .don .t b { font-weight:400; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .don .t small { color:var(--mute); font-size:12px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .don .a { font-weight:500; font-variant-numeric:tabular-nums; }
+  .x { background:none; border:0; color:#cbd5e1; font-size:18px; padding:0 4px; }
+  .dashed { width:100%; margin-top:12px; border:1px dashed #a5b4fc; background:#fff; color:#3730a3; border-radius:6px; padding:8px; font-size:14px; }
+  .form { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .form .full { grid-column:1 / -1; }
+  .primary { background:#1e1b4b; color:#fff; border:0; border-radius:6px; padding:10px; font-size:14px; font-weight:500; }
+  .foot { display:flex; gap:8px; margin-top:8px; }
+  .foot button { flex:1; background:#fff; border:1px solid #c7d2fe; color:#3730a3; border-radius:8px; padding:10px; font-size:13px; }
+  .small { font-size:11px; color:var(--mute); text-align:center; line-height:1.7; margin-top:12px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="file" accept="application/json,.json" hidden>
+<script>
+(function () {
+  var KEY = 'furusato-offline-v1';
+  var thisYear = new Date().getFullYear();
+  var memOnly = false;
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function mk(id, name) { return { id: id, name: name, manualLimit: '', settingsUpdatedAt: 0, donations: [], deleted: [] }; }
+  // 初回起動時の空データ(記録は含めない)
+  function defaultData() {
+    var y = {}; y[thisYear] = { members: [mk('m1', '1人目'), mk('m2', '2人目')] };
+    return { years: y };
+  }
+  function yen(n) { return '¥' + (n || 0).toLocaleString('ja-JP'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function limitOf(m) { return Number(m.manualLimit) || 0; }
+  function donatedOf(m) { return m.donations.reduce(function (s, d) { return s + (Number(d.amount) || 0); }, 0); }
+
+  function normalize(d) {
+    if (!d || !d.years) return defaultData();
+    Object.keys(d.years).forEach(function (y) {
+      (d.years[y].members || []).forEach(function (m) {
+        m.donations = m.donations || []; m.deleted = m.deleted || [];
+        m.settingsUpdatedAt = m.settingsUpdatedAt || 0; m.manualLimit = m.manualLimit || '';
+      });
+    });
+    return d;
+  }
+
+  // ---- merge (同じ寄付はIDで統合。削除は墓標で伝播) ----
+  function mergeMember(a, b) {
+    var s = (b.settingsUpdatedAt || 0) > (a.settingsUpdatedAt || 0) ? b : a;
+    var del = {}; (a.deleted || []).concat(b.deleted || []).forEach(function (id) { del[id] = 1; });
+    var map = {}; (a.donations || []).concat(b.donations || []).forEach(function (d) { map[d.id] = d; });
+    var out = Object.keys(map).filter(function (id) { return !del[id]; }).map(function (id) { return map[id]; });
+    var r = {}; for (var k in s) r[k] = s[k];
+    r.donations = out; r.deleted = Object.keys(del);
+    return r;
+  }
+  function mergeData(a, b) {
+    var years = {};
+    var keys = {}; Object.keys(a.years).concat(Object.keys(b.years)).forEach(function (k) { keys[k] = 1; });
+    Object.keys(keys).forEach(function (y) {
+      var ay = a.years[y], by = b.years[y];
+      if (!ay) { years[y] = by; return; }
+      if (!by) { years[y] = ay; return; }
+      var ids = {}; ay.members.concat(by.members).forEach(function (m) { ids[m.id] = 1; });
+      years[y] = { members: Object.keys(ids).map(function (id) {
+        var am = ay.members.filter(function (m) { return m.id === id; })[0];
+        var bm = by.members.filter(function (m) { return m.id === id; })[0];
+        return !am ? bm : !bm ? am : mergeMember(am, bm);
+      }) };
+    });
+    return { years: years };
+  }
+
+  // ---- storage ----
+  function load() {
+    try { var v = localStorage.getItem(KEY); if (v) return normalize(JSON.parse(v)); } catch (e) { memOnly = true; }
+    return defaultData();
+  }
+  var statusText = '';
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(data)); statusText = 'この端末に保存済み ' + new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }); }
+    catch (e) { memOnly = true; statusText = '⚠ 保存できません(書き出しでバックアップを)'; }
+    var el = document.getElementById('status'); if (el) el.textContent = statusText;
+  }
+
+  var data = load();
+  var year = String(thisYear);
+  var ui = { settings: {}, form: {} };
+
+  function render() {
+    var years = Object.keys(data.years).sort();
+    if (!data.years[year]) year = years[years.length - 1];
+    var yd = data.years[year];
+    var tl = 0, td = 0;
+    yd.members.forEach(function (m) { tl += limitOf(m); td += donatedOf(m); });
+    var bal = tl - td;
+
+    var h = '<header><div class="wrap">' +
+      '<div class="row"><h1 class="serif">ふるさと寄付帳</h1><span class="status" id="status">' + esc(statusText || (memOnly ? '⚠ 保存不可の環境です' : 'オフライン対応')) + '</span></div>' +
+      '<div class="tabs">' + years.map(function (y) { return '<button class="tab' + (y === year ? ' on' : '') + '" data-act="year" data-y="' + y + '">' + y + '年</button>'; }).join('') +
+      '<button class="tab" data-act="addyear">＋</button></div>' +
+      '<div class="total"><div><div class="lbl">世帯の残高</div><div class="big serif' + (bal < 0 ? ' neg' : '') + '">' + yen(bal) + '</div></div>' +
+      '<div class="sub">上限合計 ' + yen(tl) + '<br>寄付合計 ' + yen(td) + '</div></div></div></header><main>';
+
+    yd.members.forEach(function (m) {
+      var lim = limitOf(m), don = donatedOf(m), b = lim - don, over = don > lim && lim > 0;
+      var pct = lim > 0 ? Math.min(100, don / lim * 100) : 0;
+      var sealNum = Math.abs(b) >= 10000 ? (Math.abs(b) / 10000).toFixed(1) + '万' : Math.abs(b).toLocaleString();
+      h += '<div class="card" data-m="' + m.id + '">' +
+        '<div class="row" style="align-items:flex-start"><div>' +
+        '<input class="name serif" value="' + esc(m.name) + '" data-field="name">' +
+        '<button class="link" data-act="settings">上限額を' + (ui.settings[m.id] ? '閉じる' : '設定') + '</button></div>' +
+        '<div class="seal serif"><span>' + (b < 0 ? '超過' : '残高') + '</span><span>' + (b < 0 ? '-' : '') + sealNum + '</span></div></div>';
+      if (ui.settings[m.id]) {
+        h += '<div class="settings"><label><span>上限額(円)</span><input inputmode="numeric" value="' + esc(m.manualLimit) + '" data-field="limit"></label>' +
+          '<p class="note">※詳細シミュレーターや住民税決定通知書で確認した金額を入力してください。</p></div>';
+      }
+      h += '<div class="barlbl"><span>寄付済 ' + yen(don) + '</span><span>上限 ' + yen(lim) + '</span></div>' +
+        '<div class="bar"><i class="' + (over ? 'over' : '') + '" style="width:' + pct + '%"></i></div>';
+      if (m.donations.length) {
+        h += '<div class="list">' + m.donations.slice().sort(function (a, b) { return b.date.localeCompare(a.date); }).map(function (d) {
+          return '<div class="don"><span class="d">' + esc(d.date.slice(5).replace('-', '/')) + '</span>' +
+            '<div class="t"><b>' + esc(d.town) + '</b>' + (d.memo ? '<small>' + esc(d.memo) + '</small>' : '') + '</div>' +
+            '<span class="a">' + yen(d.amount) + '</span><button class="x" data-act="del" data-id="' + d.id + '" aria-label="削除">×</button></div>';
+        }).join('') + '</div>';
+      }
+      if (ui.form[m.id]) {
+        var today = new Date(); var iso = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+        h += '<div class="form"><input type="text" class="full" placeholder="自治体名" data-f="town">' +
+          '<input inputmode="numeric" placeholder="金額(円)" data-f="amount"><input type="date" value="' + iso + '" data-f="date">' +
+          '<input type="text" class="full" placeholder="返礼品メモ(任意)" data-f="memo">' +
+          '<button class="primary full" data-act="add">寄付を記帳する</button></div>';
+      } else {
+        h += '<button class="dashed" data-act="form">＋ 寄付を追加</button>';
+      }
+      h += '</div>';
+    });
+
+    h += '<div class="foot"><button data-act="export">📤 書き出し</button><button data-act="import">📥 読み込み(統合)</button></div>' +
+      '<p class="small">データはこの端末のブラウザ内に保存され、通信なしで使えます。<br>夫婦で共有するときは「書き出し」→相手が「読み込み」で統合できます。<br>上限額は各自入力してください。</p></main>';
+    document.getElementById('app').innerHTML = h;
+  }
+
+  function memberFrom(el) { var c = el.closest('[data-m]'); if (!c) return null; var id = c.getAttribute('data-m'); return { card: c, m: data.years[year].members.filter(function (x) { return x.id === id; })[0] }; }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]'); if (!t) return;
+    var act = t.getAttribute('data-act'), r = memberFrom(t);
+    if (act === 'year') { year = t.getAttribute('data-y'); render(); }
+    else if (act === 'addyear') {
+      var y = (prompt('追加する年(例: 2025)') || '').trim();
+      if (!/^20\d{2}$/.test(y) || data.years[y]) return;
+      data.years[y] = { members: data.years[year].members.map(function (m) { return { id: m.id, name: m.name, manualLimit: m.manualLimit, settingsUpdatedAt: Date.now(), donations: [], deleted: [] }; }) };
+      year = y; save(); render();
+    }
+    else if (act === 'settings') { ui.settings[r.m.id] = !ui.settings[r.m.id]; render(); }
+    else if (act === 'form') { ui.form[r.m.id] = true; render(); }
+    else if (act === 'add') {
+      var q = function (n) { return r.card.querySelector('[data-f="' + n + '"]').value; };
+      var town = q('town').trim(), amount = Number(q('amount').replace(/[^0-9]/g, ''));
+      if (!town || !amount) return;
+      r.m.donations.push({ id: uid(), town: town, amount: amount, date: q('date'), memo: q('memo').trim() });
+      ui.form[r.m.id] = false; save(); render();
+    }
+    else if (act === 'del') {
+      var id = t.getAttribute('data-id');
+      r.m.donations = r.m.donations.filter(function (d) { return d.id !== id; });
+      r.m.deleted.push(id); save(); render();
+    }
+    else if (act === 'export') {
+      var json = JSON.stringify(data, null, 2);
+      var d = new Date(), name = 'furusato-' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.json';
+      try {
+        var file = new File([json], name, { type: 'application/json' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'ふるさと寄付帳' }).catch(function () {}); return; }
+      } catch (err) {}
+      var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' })); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    else if (act === 'import') { document.getElementById('file').click(); }
+  });
+
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.id === 'file') {
+      var f = t.files && t.files[0]; if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        try { data = mergeData(data, normalize(JSON.parse(rd.result))); save(); render(); alert('読み込んで統合しました。'); }
+        catch (err) { alert('読み込めませんでした。書き出したファイルを選んでください。'); }
+      };
+      rd.readAsText(f); t.value = ''; return;
+    }
+    var fld = t.getAttribute && t.getAttribute('data-field'); if (!fld) return;
+    var r = memberFrom(t); if (!r) return;
+    if (fld === 'name') r.m.name = t.value;
+    if (fld === 'limit') r.m.manualLimit = t.value.replace(/[^0-9]/g, '');
+    r.m.settingsUpdatedAt = Date.now(); save(); render();
+  });
+
+  render();
+
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+})();
+</script>
+</body>
+</html>
